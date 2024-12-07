@@ -1,17 +1,18 @@
 
 use v5.40;
-use experimental qw[ class builtin ];
-use builtin      qw[ load_module ];
+use experimental qw[ class ];
 
-class Streams::Stream :isa(Streams::Source) {
+class Streams::Stream {
     field $source :param :reader;
 
-    ## -------------------------------------------------------------------------
-    ## Source API
-    ## -------------------------------------------------------------------------
+    field $prev :reader :param = undef;
+    field $next :reader;
 
-    method     next { $source->next     }
-    method has_next { $source->has_next }
+    ADJUST { $prev->set_next( $self ) }
+
+    method is_head { not defined $prev }
+
+    method set_next ($n) { $next = $n }
 
     ## -------------------------------------------------------------------------
     ## Terminals
@@ -19,7 +20,7 @@ class Streams::Stream :isa(Streams::Source) {
 
     method reduce ($init, $f) {
         Streams::Operation::Reduce->new(
-            source  => $self,
+            source  => $source,
             initial => $init,
             reducer => blessed $f ? $f : Streams::Functional::Reducer->new(
                 f => $f
@@ -29,7 +30,7 @@ class Streams::Stream :isa(Streams::Source) {
 
     method foreach ($f) {
         Streams::Operation::ForEach->new(
-            source   => $self,
+            source   => $source,
             consumer => blessed $f ? $f : Streams::Functional::Consumer->new(
                 f => $f
             )
@@ -38,14 +39,14 @@ class Streams::Stream :isa(Streams::Source) {
 
     method collect ($acc) {
         Streams::Operation::Collect->new(
-            source      => $self,
+            source      => $source,
             accumulator => $acc
         )->apply
     }
 
     method match ($matcher) {
         Streams::Operation::Match->new(
-            matcher  => $matcher,
+            matcher  => $source,
             source   => $self,
         )->apply
     }
@@ -55,56 +56,74 @@ class Streams::Stream :isa(Streams::Source) {
     ## -------------------------------------------------------------------------
 
     method take_until ($f) {
-        Streams::Stream->new( source => Streams::Operation::TakeUntil->new(
-            source    => $self,
-            predicate => blessed $f ? $f : Streams::Functional::Predicate->new(
-                f => $f
+        Streams::Stream->new(
+            prev   => $self,
+            source => Streams::Operation::TakeUntil->new(
+                source    => $source,
+                predicate => blessed $f ? $f : Streams::Functional::Predicate->new(
+                    f => $f
+                )
             )
-        ))
+        )
     }
 
     method when ($predicate, $f) {
-        Streams::Stream->new( source => Streams::Operation::When->new(
-            source    => $self,
-            consumer  => blessed $f ? $f : Streams::Functional::Consumer->new(
-                f => $f
-            ),
-            predicate => blessed $predicate
-                ? $predicate
-                : Streams::Functional::Predicate->new( f => $predicate )
-        ))
+        Streams::Stream->new(
+            prev   => $self,
+            source => Streams::Operation::When->new(
+                source    => $source,
+                consumer  => blessed $f ? $f : Streams::Functional::Consumer->new(
+                    f => $f
+                ),
+                predicate => blessed $predicate
+                    ? $predicate
+                    : Streams::Functional::Predicate->new( f => $predicate )
+            )
+        )
     }
 
     method map ($f) {
-        Streams::Stream->new( source => Streams::Operation::Map->new(
-            source => $self,
-            mapper => blessed $f ? $f : Streams::Functional::Mapper->new(
-                f => $f
+        Streams::Stream->new(
+            prev   => $self,
+            source => Streams::Operation::Map->new(
+                source => $source,
+                mapper => blessed $f ? $f : Streams::Functional::Mapper->new(
+                    f => $f
+                )
             )
-        ))
+        )
     }
 
     method grep ($f) {
-        Streams::Stream->new( source => Streams::Operation::Grep->new(
-            source    => $self,
-            predicate => blessed $f ? $f : Streams::Functional::Predicate->new(
-                f => $f
+        Streams::Stream->new(
+            prev   => $self,
+            source => Streams::Operation::Grep->new(
+                source    => $source,
+                predicate => blessed $f ? $f : Streams::Functional::Predicate->new(
+                    f => $f
+                )
             )
-        ))
+        )
     }
 
     method peek ($f) {
-        Streams::Stream->new( source => Streams::Operation::Peek->new(
-            source   => $self,
-            consumer => blessed $f ? $f : Streams::Functional::Consumer->new(
-                f => $f
+        Streams::Stream->new(
+            prev   => $self,
+            source => Streams::Operation::Peek->new(
+                source   => $source,
+                consumer => blessed $f ? $f : Streams::Functional::Consumer->new(
+                    f => $f
+                )
             )
-        ))
+        )
     }
 
     method buffered {
-        Streams::Stream->new( source => Streams::Operation::Buffered->new(
-            source => $self
-        ))
+        Streams::Stream->new(
+            prev   => $self,
+            source => Streams::Operation::Buffered->new(
+                source => $source
+            )
+        )
     }
 }
