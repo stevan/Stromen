@@ -4,12 +4,8 @@ use experimental qw[ class ];
 
 class Stream::Source::FromArray :isa(Stream::Source) {
     field $array :param :reader;
+    field $index = 0;
 
-    field $next :reader;
-
-    method has_next {
-        return false unless @$array;
-        $next = shift @$array;
-        return true;
-    }
+    method     next { $array->[$index++]  }
+    method has_next { $index < scalar $array->@* }
 }

@@ -5,9 +5,10 @@ use experimental qw[ class ];
 use Stream::Functional;
 use Stream::Functional::Accumulator;
 use Stream::Functional::Consumer;
-use Stream::Functional::Mapper;
+use Stream::Functional::Function;
 use Stream::Functional::Predicate;
 use Stream::Functional::Reducer;
+use Stream::Functional::Supplier;
 
 use Stream::Operation;
 use Stream::Operation::Buffered;
@@ -18,6 +19,7 @@ use Stream::Operation::Map;
 use Stream::Operation::Match;
 use Stream::Operation::Peek;
 use Stream::Operation::Reduce;
+use Stream::Operation::Take;
 use Stream::Operation::TakeUntil;
 use Stream::Operation::When;
 
@@ -28,18 +30,82 @@ use Stream::Match::Builder;
 
 use Stream::Source;
 use Stream::Source::FromArray;
+use Stream::Source::FromSupplier;
+use Stream::Source::FromIterator;
 
 class Stream {
     field $source :param :reader;
 
-    field $prev :reader :param = undef;
-    field $next :reader;
+    field $prev :param = undef;
+    field $next;
 
     ADJUST { $prev->set_next( $self ) if $prev }
 
-    method is_head { not defined $prev }
+    ## -------------------------------------------------------------------------
+    ## Additional Constructors
+    ## -------------------------------------------------------------------------
 
+    # ->of( @list )
+    # ->of( [ @list ] )
+    sub of ($, @list) {
+        @list = $list[0]->@*
+            if scalar @list == 1 && ref $list[0] eq 'ARRAY';
+        Stream->new(
+            source => Stream::Source::FromArray->new( array => \@list )
+        )
+    }
+
+    # Infinite Generator
+    # ->generate(sub { ... })
+    # ->generate(Supplier->new)
+    sub generate ($, $f) {
+        Stream->new(
+            source => Stream::Source::FromSupplier->new(
+                supplier => blessed $f ? $f : Stream::Functional::Supplier->new(
+                    f => $f
+                )
+            )
+        )
+    }
+
+    # Infinite Iterator
+    # ->iterate($seed, sub { ... })
+    # ->iterate($seed, Function->new)
+    # Finite Iterator
+    # ->iterate($seed, sub { ... }, sub { ... })
+    # ->iterate($seed, Predicate->new, Function->new)
+    sub iterate ($, $seed, @args) {
+        my ($next, $has_next);
+
+        if (scalar @args == 1) {
+            $next = blessed $args[0] ? $args[0]
+                    : Stream::Functional::Function->new( f => $args[0] );
+        }
+        else {
+            $has_next = blessed $args[0] ? $args[0]
+                      : Stream::Functional::Predicate->new( f => $args[0] );
+            $next     = blessed $args[1] ? $args[1]
+                      : Stream::Functional::Function->new( f => $args[1] );
+        }
+
+        Stream->new(
+            source => Stream::Source::FromIterator->new(
+                seed     => $seed,
+                next     => $next,
+                has_next => $has_next,
+            )
+        )
+    }
+
+    ## -------------------------------------------------------------------------
+    ## Navigation
+    ## -------------------------------------------------------------------------
+
+    method is_head { not defined $prev }
     method set_next ($n) { $next = $n }
+
+    method next { $next }
+    method prev { $prev }
 
     ## -------------------------------------------------------------------------
     ## Terminals
@@ -82,6 +148,16 @@ class Stream {
     ## Operations
     ## -------------------------------------------------------------------------
 
+    method take ($amount) {
+        Stream->new(
+            prev   => $self,
+            source => Stream::Operation::Take->new(
+                source => $source,
+                amount => $amount,
+            )
+        )
+    }
+
     method take_until ($f) {
         Stream->new(
             prev   => $self,
@@ -114,7 +190,7 @@ class Stream {
             prev   => $self,
             source => Stream::Operation::Map->new(
                 source => $source,
-                mapper => blessed $f ? $f : Stream::Functional::Mapper->new(
+                mapper => blessed $f ? $f : Stream::Functional::Function->new(
                     f => $f
                 )
             )

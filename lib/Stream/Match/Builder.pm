@@ -3,14 +3,14 @@ use v5.40;
 use experimental qw[ class ];
 
 use Stream::Match;
-use Stream::Functional::Mapper;
+use Stream::Functional::Function;
 
 class Stream::Match::Builder {
     field $match_root;
     field $current_match;
 
     my sub build_match (%opts) {
-        $opts{on_match} = Stream::Functional::Mapper->new( f => $opts{on_match} )
+        $opts{on_match} = Stream::Functional::Function->new( f => $opts{on_match} )
             unless blessed $opts{on_match};
 
         return Stream::Match::Predicate->new( %opts ) if $opts{predicate};
