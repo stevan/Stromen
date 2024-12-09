@@ -133,4 +133,30 @@ subtest '... checking (finite) iterator source' => sub {
         \@expected_result, '... got the result we expected');
 };
 
+subtest '... checking concat' => sub {
+    my @all;
+    my @after_grep;
+    my @after_map;
+    my @result = Stream->concat(
+            Stream->of( 1 .. 16 ),
+            Stream->of( 1 .. 16 )
+        )
+        ->peek(sub ($x) { push @all => $x })
+        ->grep(sub ($x) { ($x % 2) == 0 })
+        ->peek(sub ($x) { push @after_grep => $x })
+        ->map(sub ($x) { $x * $x })
+        ->peek(sub ($x) { push @after_map => $x })
+        ->collect( Stream::Collectors->ToList )
+    ;
+
+    eq_or_diff(\@all,
+        [ @expected_all, @expected_all], '... got the full list we expected');
+    eq_or_diff(\@after_grep,
+        [ @expected_after_grep, @expected_after_grep ], '... got the after grep we expected');
+    eq_or_diff(\@after_map,
+        [ @expected_after_map, @expected_after_map ], '... got the after map we expected');
+    eq_or_diff(\@result,
+        [ @expected_result, @expected_result ], '... got the result we expected');
+};
+
 done_testing;

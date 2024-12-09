@@ -13,6 +13,7 @@ use Stream::Functional::Supplier;
 use Stream::Operation;
 use Stream::Operation::Buffered;
 use Stream::Operation::Collect;
+use Stream::Operation::Concat;
 use Stream::Operation::ForEach;
 use Stream::Operation::Grep;
 use Stream::Operation::Map;
@@ -36,11 +37,9 @@ use Stream::Source::FromSupplier;
 
 class Stream {
     field $source :param :reader;
+    field $prev   :param :reader = undef;
 
-    field $prev :param = undef;
-    field $next;
-
-    ADJUST { $prev->set_next( $self ) if $prev }
+    method is_head { not defined $prev }
 
     ## -------------------------------------------------------------------------
     ## Additional Constructors
@@ -111,15 +110,13 @@ class Stream {
         )
     }
 
-    ## -------------------------------------------------------------------------
-    ## Navigation
-    ## -------------------------------------------------------------------------
-
-    method is_head { not defined $prev }
-    method set_next ($n) { $next = $n }
-
-    method next { $next }
-    method prev { $prev }
+    sub concat ($, @sources) {
+        Stream->new(
+            source => Stream::Operation::Concat->new(
+                sources => [ map $_->source, @sources ]
+            )
+        )
+    }
 
     ## -------------------------------------------------------------------------
     ## Terminals
