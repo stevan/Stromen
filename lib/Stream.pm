@@ -30,8 +30,9 @@ use Stream::Match::Builder;
 
 use Stream::Source;
 use Stream::Source::FromArray;
-use Stream::Source::FromSupplier;
 use Stream::Source::FromIterator;
+use Stream::Source::FromRange;
+use Stream::Source::FromSupplier;
 
 class Stream {
     field $source :param :reader;
@@ -64,6 +65,19 @@ class Stream {
                 supplier => blessed $f ? $f : Stream::Functional::Supplier->new(
                     f => $f
                 )
+            )
+        )
+    }
+
+    # Range iterator
+    # ->range($start, $end)
+    # ->range($start, $end, $step)
+    sub range ($, $start, $end, $step=1) {
+        Stream->new(
+            source => Stream::Source::FromRange->new(
+                start => $start,
+                end   => $end,
+                step  => $step,
             )
         )
     }
