@@ -47,10 +47,10 @@ class Stream {
 
     # ->of( @list )
     # ->of( [ @list ] )
-    sub of ($, @list) {
+    sub of ($class, @list) {
         @list = $list[0]->@*
             if scalar @list == 1 && ref $list[0] eq 'ARRAY';
-        Stream->new(
+        $class->new(
             source => Stream::Source::FromArray->new( array => \@list )
         )
     }
@@ -58,8 +58,8 @@ class Stream {
     # Infinite Generator
     # ->generate(sub { ... })
     # ->generate(Supplier->new)
-    sub generate ($, $f) {
-        Stream->new(
+    sub generate ($class, $f) {
+        $class->new(
             source => Stream::Source::FromSupplier->new(
                 supplier => blessed $f ? $f : Stream::Functional::Supplier->new(
                     f => $f
@@ -71,8 +71,8 @@ class Stream {
     # Range iterator
     # ->range($start, $end)
     # ->range($start, $end, $step)
-    sub range ($, $start, $end, $step=1) {
-        Stream->new(
+    sub range ($class, $start, $end, $step=1) {
+        $class->new(
             source => Stream::Source::FromRange->new(
                 start => $start,
                 end   => $end,
@@ -87,7 +87,7 @@ class Stream {
     # Finite Iterator
     # ->iterate($seed, sub { ... }, sub { ... })
     # ->iterate($seed, Predicate->new, Function->new)
-    sub iterate ($, $seed, @args) {
+    sub iterate ($class, $seed, @args) {
         my ($next, $has_next);
 
         if (scalar @args == 1) {
@@ -101,7 +101,7 @@ class Stream {
                       : Stream::Functional::Function->new( f => $args[1] );
         }
 
-        Stream->new(
+        $class->new(
             source => Stream::Source::FromIterator->new(
                 seed     => $seed,
                 next     => $next,
@@ -110,8 +110,8 @@ class Stream {
         )
     }
 
-    sub concat ($, @sources) {
-        Stream->new(
+    sub concat ($class, @sources) {
+        $class->new(
             source => Stream::Operation::Concat->new(
                 sources => [ map $_->source, @sources ]
             )
@@ -160,7 +160,7 @@ class Stream {
     ## -------------------------------------------------------------------------
 
     method take ($amount) {
-        Stream->new(
+        __CLASS__->new(
             prev   => $self,
             source => Stream::Operation::Take->new(
                 source => $source,
@@ -170,7 +170,7 @@ class Stream {
     }
 
     method take_until ($f) {
-        Stream->new(
+        __CLASS__->new(
             prev   => $self,
             source => Stream::Operation::TakeUntil->new(
                 source    => $source,
@@ -182,7 +182,7 @@ class Stream {
     }
 
     method when ($predicate, $f) {
-        Stream->new(
+        __CLASS__->new(
             prev   => $self,
             source => Stream::Operation::When->new(
                 source    => $source,
@@ -197,7 +197,7 @@ class Stream {
     }
 
     method map ($f) {
-        Stream->new(
+        __CLASS__->new(
             prev   => $self,
             source => Stream::Operation::Map->new(
                 source => $source,
@@ -209,7 +209,7 @@ class Stream {
     }
 
     method grep ($f) {
-        Stream->new(
+        __CLASS__->new(
             prev   => $self,
             source => Stream::Operation::Grep->new(
                 source    => $source,
@@ -221,7 +221,7 @@ class Stream {
     }
 
     method peek ($f) {
-        Stream->new(
+        __CLASS__->new(
             prev   => $self,
             source => Stream::Operation::Peek->new(
                 source   => $source,
@@ -233,7 +233,7 @@ class Stream {
     }
 
     method buffered {
-        Stream->new(
+        __CLASS__->new(
             prev   => $self,
             source => Stream::Operation::Buffered->new(
                 source => $source

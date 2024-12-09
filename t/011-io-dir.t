@@ -9,8 +9,10 @@ use Test::Differences;
 use Stream;
 use Stream::IO;
 
-Stream::IO->files("./lib")->foreach(sub ($file) {
-    say "GOT: $file";
-});
+Stream::IO
+    ->walk("./lib")
+    ->grep(sub ($file) { $file->basename !~ /^\./ })
+    ->grep(sub ($file) {  -f $file })
+    ->foreach(sub ($file) { say "GOT: $file" });
 
 done_testing;

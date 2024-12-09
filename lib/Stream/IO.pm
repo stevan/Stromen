@@ -4,30 +4,43 @@ use experimental qw[ class ];
 
 use Path::Tiny ();
 
-use Stream;
 use Stream::IO::Source::LinesFromHandle;
 use Stream::IO::Source::FilesFromDirectory;
 
-class Stream::IO {
+use Stream::IO::Operation::WalkDirectoryTree;
 
-    sub lines ($, $fh) {
+class Stream::IO :isa(Stream) {
+
+    sub lines ($class, $fh) {
         $fh = Path::Tiny::path($fh)->openr
             unless blessed $fh
                 || ref $fh eq 'GLOB';
 
-        Stream->new(
+        $class->new(
             source => Stream::IO::Source::LinesFromHandle->new( fh => $fh )
         )
     }
 
-
-    sub files ($f, $dir) {
+    sub files ($class, $dir) {
         $dir = Path::Tiny::path($dir)
             unless blessed $dir;
 
-        Stream->new(
+        $class->new(
             source => Stream::IO::Source::FilesFromDirectory->new(
                 dir => $dir
+            )
+        )
+    }
+
+    sub walk ($class, $dir) {
+        $dir = Path::Tiny::path($dir)
+            unless blessed $dir;
+
+        $class->new(
+            source => Stream::IO::Operation::WalkDirectoryTree->new(
+                source => Stream::IO::Source::FilesFromDirectory->new(
+                    dir => $dir
+                )
             )
         )
     }

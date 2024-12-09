@@ -39,18 +39,18 @@ class Stream::IO::Source::FilesFromDirectory :isa(Stream::Source) {
                 }
                 else {
                     say('... Value is good, ready to return it') if DEBUG;
-                    last;
+                    return true;
                 }
             }
             else {
                 say('... Exiting loop ... DONE') if DEBUG;
-                return false;
+                last;
             }
             say('... ... looping') if DEBUG;
         }
 
         say('... Got next value('.$next.')') if DEBUG;
-        return true;
+        return false;
 
     }
 }
