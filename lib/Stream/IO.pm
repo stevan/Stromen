@@ -32,15 +32,21 @@ class Stream::IO :isa(Stream) {
         )
     }
 
-    sub walk ($class, $dir) {
+    sub walk ($class, $dir, $exclude=undef) {
         $dir = Path::Tiny::path($dir)
             unless blessed $dir;
+
+        $exclude = blessed $exclude
+            ? $exclude
+            : Stream::Functional::Predicate->new( f => $exclude )
+            if defined $exclude;
 
         $class->new(
             source => Stream::IO::Operation::WalkDirectoryTree->new(
                 source => Stream::IO::Source::FilesFromDirectory->new(
                     dir => $dir
-                )
+                ),
+                exclude => $exclude
             )
         )
     }

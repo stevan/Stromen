@@ -18,7 +18,7 @@ class Stream::IO::Source::FilesFromDirectory :isa(Stream::Source) {
     method next { $next }
 
     method has_next {
-        while (1) {
+        while (true) {
             say('... Entering loop ... ') if DEBUG;
 
             say('... About to read directory ...') if DEBUG;
