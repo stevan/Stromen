@@ -12,12 +12,14 @@ use Stream::MOP;
 
 my $src = Stream->new(
     source => Stream::MOP::Operation::ExpandSymbols->new(
-        source => Stream::MOP::Source::GlobsFromStash->new( stash => \%Stream:: )
+        slots  => [qw[ CODE HASH ARRAY ]],
+        source => Stream::MOP::Operation::WalkSymbolTable->new(
+            source => Stream::MOP::Source::GlobsFromStash->new( stash => \%Stream:: )
+        )
     )
 );
 
-$src
-->foreach(sub ($g) {
+$src->foreach(sub ($g) {
     say $g;
 });
 

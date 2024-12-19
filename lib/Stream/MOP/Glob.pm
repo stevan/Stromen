@@ -33,11 +33,12 @@ class Stream::MOP::Glob {
     method get_hash_symbol   { Stream::MOP::Symbol->new( glob => $self, ref => $self->get_slot_value('HASH')   ) }
     method get_code_symbol   { Stream::MOP::Symbol->new( glob => $self, ref => $self->get_slot_value('CODE')   ) }
 
-    method get_all_symbols {
+    method get_all_symbols (@slots) {
+        @slots = qw[ SCALAR ARRAY HASH CODE ] unless @slots;
         map  { Stream::MOP::Symbol->new( glob => $self, ref => $_ ) }
         map  { $self->get_slot_value($_) }
         grep { $self->has_slot_value($_) }
-             qw[ SCALAR ARRAY HASH CODE ];
+        @slots;
     }
 
     method has_slot_value ($slot) {
