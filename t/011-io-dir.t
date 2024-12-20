@@ -10,7 +10,8 @@ use Stream;
 use Stream::IO;
 
 Stream::IO
-    ->walk("./lib")
+    ->files("./lib")
+    ->walk
     ->grep(sub ($file) { $file->basename !~ /^\./ })
     ->grep(sub ($file) {  -f $file })
     ->foreach(sub ($file) {

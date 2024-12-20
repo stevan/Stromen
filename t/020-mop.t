@@ -7,23 +7,71 @@ use Test::More;
 use Test::Differences;
 
 use Stream;
-
 use Stream::MOP;
 
+class Foo {
+    method foo { ... }
+}
 
-my $src = Stream->new(
-    source => Stream::MOP::Source::GlobsFromStash->new( stash => \%Stream:: )
-)->recurse(
-    sub ($c) { $c->is_stash },
-    sub ($c) { Stream::MOP::Source::GlobsFromStash->new( stash => $c->get_slot_value('HASH') ) }
-);
+class Foo::Bar :isa(Foo) {
+    method bar { ... }
+}
 
-$src
-->flatten(sub ($g) { $g->get_all_symbols(qw[ CODE HASH ARRAY ]) })
-->foreach(sub ($s) {
-    isa_ok($s, 'Stream::MOP::Symbol');
-    like($s->to_string, qr/^[&@%]Stream\:\:/, '... everything is from Stream::');
-});
+class Foo::Bar::Baz  :isa(Foo::Bar) {
+    method baz { ... }
+}
+
+class Foo::Bar::Gorch {
+    method gorch { ... }
+}
+
+subtest '... testing MOP walker' => sub {
+    my @results = Stream::MOP
+        ->namespace( \%Foo:: )
+        ->walk
+        ->expand_symbols(qw[ CODE HASH ARRAY ])
+        ->collect( Stream::Collectors->ToList );
+
+    eq_or_diff(
+        [ map $_->to_string, @results ],
+        [qw[
+            %Foo::Bar::
+            %Foo::Bar::Baz::
+            @Foo::Bar::Baz::ISA
+            &Foo::Bar::Baz::baz
+            &Foo::Bar::Baz::new
+            %Foo::Bar::Gorch::
+            &Foo::Bar::Gorch::gorch
+            &Foo::Bar::Gorch::new
+            @Foo::Bar::ISA
+            &Foo::Bar::bar
+            &Foo::Bar::new
+            &Foo::foo
+            &Foo::new
+        ]],
+        '... got the expected results'
+    );
+};
+
+subtest '... testing MOP walker' => sub {
+    my @results = Stream::MOP
+        ->mro( 'Foo::Bar::Baz' )
+        ->expand_symbols(qw[ CODE ])
+        ->collect( Stream::Collectors->ToList );
+
+    eq_or_diff(
+        [ map $_->to_string, @results ],
+        [qw[
+            &Foo::Bar::Baz::baz
+            &Foo::Bar::Baz::new
+            &Foo::Bar::bar
+            &Foo::Bar::new
+            &Foo::foo
+            &Foo::new
+        ]],
+        '... got the expected results'
+    );
+};
 
 done_testing;
 

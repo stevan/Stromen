@@ -30,10 +30,12 @@ class Stream::IO :isa(Stream) {
         )
     }
 
-    sub walk ($class, $dir) {
-        $class->files( $dir )->recurse(
+    method walk {
+        $self->recurse(
             sub ($c) { $c->is_dir },
-            sub ($c) { Stream::IO::Source::FilesFromDirectory->new( dir => $c ) }
+            sub ($c) {
+                Stream::IO::Source::FilesFromDirectory->new( dir => $c )
+            }
         );
     }
 
