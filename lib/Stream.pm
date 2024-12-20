@@ -21,6 +21,7 @@ use Stream::Operation::Grep;
 use Stream::Operation::Map;
 use Stream::Operation::Match;
 use Stream::Operation::Peek;
+use Stream::Operation::Recurse;
 use Stream::Operation::Reduce;
 use Stream::Operation::Take;
 use Stream::Operation::TakeUntil;
@@ -181,6 +182,17 @@ class Stream {
                 mapper => blessed $f ? $f : Stream::Functional::Function->new(
                     f => $f
                 )
+            )
+        )
+    }
+
+    method recurse ($can_recurse, $recurse) {
+        __CLASS__->new(
+            prev   => $self,
+            source => Stream::Operation::Recurse->new(
+                source      => $source,
+                can_recurse => blessed $can_recurse ? $can_recurse : Stream::Functional::Predicate->new( f => $can_recurse ),
+                recurse     => blessed $recurse     ? $recurse     : Stream::Functional::Function ->new( f => $recurse ),
             )
         )
     }

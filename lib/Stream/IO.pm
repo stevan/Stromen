@@ -7,8 +7,6 @@ use Path::Tiny ();
 use Stream::IO::Source::LinesFromHandle;
 use Stream::IO::Source::FilesFromDirectory;
 
-use Stream::IO::Operation::WalkDirectoryTree;
-
 class Stream::IO :isa(Stream) {
 
     sub lines ($class, $fh) {
@@ -32,23 +30,11 @@ class Stream::IO :isa(Stream) {
         )
     }
 
-    sub walk ($class, $dir, $exclude=undef) {
-        $dir = Path::Tiny::path($dir)
-            unless blessed $dir;
-
-        $exclude = blessed $exclude
-            ? $exclude
-            : Stream::Functional::Predicate->new( f => $exclude )
-            if defined $exclude;
-
-        $class->new(
-            source => Stream::IO::Operation::WalkDirectoryTree->new(
-                source => Stream::IO::Source::FilesFromDirectory->new(
-                    dir => $dir
-                ),
-                exclude => $exclude
-            )
-        )
+    sub walk ($class, $dir) {
+        $class->files( $dir )->recurse(
+            sub ($c) { $c->is_dir },
+            sub ($c) { Stream::IO::Source::FilesFromDirectory->new( dir => $c ) }
+        );
     }
 
 }

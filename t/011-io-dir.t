@@ -14,7 +14,11 @@ Stream::IO
     ->grep(sub ($file) { $file->basename !~ /^\./ })
     ->grep(sub ($file) {  -f $file })
     ->foreach(sub ($file) {
+        #say $file;
         ok($file->basename =~ /\.pm/, '... they are all pm files');
     });
 
 done_testing;
+
+__DATA__
+
