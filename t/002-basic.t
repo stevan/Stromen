@@ -21,4 +21,18 @@ subtest '.... flatten test' => sub {
     )
 };
 
+
+subtest '.... flat_map test' => sub {
+    my @results = Stream
+        ->of(map { [0 .. 5] } 0 .. 5)
+        ->flat_map(sub ($a) { Stream->of( @$a ) })
+        ->collect( Stream::Collectors->ToList );
+
+    eq_or_diff(
+        \@results,
+        [ map { 0 .. 5 } 0 .. 5 ],
+        '... got the expected flat mapped results'
+    )
+};
+
 done_testing;

@@ -7,9 +7,13 @@ class Stream::Operation::Collect :isa(Stream::Operation::Terminal) {
     field $accumulator :param;
 
     method apply {
+        #say "applying Collect ...";
         while ($source->has_next) {
-            $accumulator->apply($source->next);
+            my $next = $source->next;
+            #say "Calling accumulator apply on $next";
+            $accumulator->apply($next);
         }
+        #say "Got all results ....";
         return $accumulator->result;
     }
 }

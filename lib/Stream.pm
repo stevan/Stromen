@@ -14,6 +14,7 @@ use Stream::Operation;
 use Stream::Operation::Buffered;
 use Stream::Operation::Collect;
 use Stream::Source::FromArray::OfStreams;
+use Stream::Operation::FlatMap;
 use Stream::Operation::Flatten;
 use Stream::Operation::ForEach;
 use Stream::Operation::Grep;
@@ -166,6 +167,18 @@ class Stream {
             source => Stream::Operation::Flatten->new(
                 source  => $source,
                 flatten => blessed $f ? $f : Stream::Functional::Function->new(
+                    f => $f
+                )
+            )
+        )
+    }
+
+    method flat_map ($f) {
+        __CLASS__->new(
+            prev   => $self,
+            source => Stream::Operation::FlatMap->new(
+                source => $source,
+                mapper => blessed $f ? $f : Stream::Functional::Function->new(
                     f => $f
                 )
             )
