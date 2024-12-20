@@ -20,7 +20,8 @@ my $src = Stream->new(
 );
 
 $src->foreach(sub ($g) {
-    say $g;
+    isa_ok($g, 'Stream::MOP::Symbol');
+    like($g->to_string, qr/^[&@%]Stream\:\:/, '... everything is from Stream::');
 });
 
 done_testing;

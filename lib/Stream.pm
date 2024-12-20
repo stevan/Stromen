@@ -13,7 +13,8 @@ use Stream::Functional::Supplier;
 use Stream::Operation;
 use Stream::Operation::Buffered;
 use Stream::Operation::Collect;
-use Stream::Operation::Concat;
+use Stream::Source::FromArray::OfStreams;
+use Stream::Operation::Flatten;
 use Stream::Operation::ForEach;
 use Stream::Operation::Grep;
 use Stream::Operation::Map;
@@ -112,7 +113,7 @@ class Stream {
 
     sub concat ($class, @sources) {
         $class->new(
-            source => Stream::Operation::Concat->new(
+            source => Stream::Source::FromArray::OfStreams->new(
                 sources => [ map $_->source, @sources ]
             )
         )
@@ -158,6 +159,18 @@ class Stream {
     ## -------------------------------------------------------------------------
     ## Operations
     ## -------------------------------------------------------------------------
+
+    method flatten ($f) {
+        __CLASS__->new(
+            prev   => $self,
+            source => Stream::Operation::Flatten->new(
+                source  => $source,
+                flatten => blessed $f ? $f : Stream::Functional::Function->new(
+                    f => $f
+                )
+            )
+        )
+    }
 
     method take ($amount) {
         __CLASS__->new(
