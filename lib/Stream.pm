@@ -186,6 +186,18 @@ class Stream {
         )
     }
 
+    method flat_map_as ($stream_class, $f) {
+        $stream_class->new(
+            prev   => $self,
+            source => Stream::Operation::FlatMap->new(
+                source => $source,
+                mapper => blessed $f ? $f : Stream::Functional::Function->new(
+                    f => $f
+                )
+            )
+        )
+    }
+
     method recurse ($can_recurse, $recurse) {
         __CLASS__->new(
             prev   => $self,

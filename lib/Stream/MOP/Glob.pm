@@ -10,7 +10,9 @@ class Stream::MOP::Glob {
     field $glob :param :reader;
 
     field $b;
-    ADJUST { $b = B::svref_2object($glob) }
+    ADJUST {
+        $b = B::svref_2object($glob);
+    }
 
     method name      { $b->SAFENAME    }
     method stash     { $b->STASH->NAME }
@@ -19,7 +21,7 @@ class Stream::MOP::Glob {
 
     method has_scalar {
         my $scalar = $self->get_slot_value('SCALAR');
-        warn "!!!!!!!!!!! has SCALAR ".$scalar // '~';
+        #warn "!!!!!!!!!!! has SCALAR ".$scalar // '~';
         return false if not defined $scalar;
         return defined $scalar->$*;
     }
