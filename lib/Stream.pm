@@ -13,7 +13,7 @@ use Stream::Functional::Supplier;
 use Stream::Operation;
 use Stream::Operation::Buffered;
 use Stream::Operation::Collect;
-use Stream::Source::FromArray::OfStreams;
+use Stream::Operation::Every;
 use Stream::Operation::FlatMap;
 use Stream::Operation::Flatten;
 use Stream::Operation::ForEach;
@@ -34,6 +34,7 @@ use Stream::Match::Builder;
 
 use Stream::Source;
 use Stream::Source::FromArray;
+use Stream::Source::FromArray::OfStreams;
 use Stream::Source::FromIterator;
 use Stream::Source::FromRange;
 use Stream::Source::FromSupplier;
@@ -205,6 +206,20 @@ class Stream {
                 source      => $source,
                 can_recurse => blessed $can_recurse ? $can_recurse : Stream::Functional::Predicate->new( f => $can_recurse ),
                 recurse     => blessed $recurse     ? $recurse     : Stream::Functional::Function ->new( f => $recurse ),
+            )
+        )
+    }
+
+
+    method every ($stride, $f) {
+        __CLASS__->new(
+            prev   => $self,
+            source => Stream::Operation::Every->new(
+                source  => $source,
+                stride  => $stride,
+                event   => blessed $f ? $f : Stream::Functional::Consumer->new(
+                    f => $f
+                )
             )
         )
     }
