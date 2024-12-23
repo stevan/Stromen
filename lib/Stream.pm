@@ -11,7 +11,6 @@ use Stream::Functional::Reducer;
 use Stream::Functional::Supplier;
 
 use Stream::Operation;
-use Stream::Operation::Buffered;
 use Stream::Operation::Collect;
 use Stream::Operation::Every;
 use Stream::Operation::FlatMap;
@@ -297,12 +296,4 @@ class Stream {
         )
     }
 
-    method buffered {
-        __CLASS__->new(
-            prev   => $self,
-            source => Stream::Operation::Buffered->new(
-                source => $source
-            )
-        )
-    }
 }

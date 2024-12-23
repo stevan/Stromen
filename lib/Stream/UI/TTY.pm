@@ -39,11 +39,13 @@ class Stream::UI::TTY {
     method setup {
         Term::ReadKey::ReadMode( 'cbreak', $stdin );
         $self->enable_mouse_tracking if $use_mouse;
+        $self;
     }
 
     method teardown {
         Term::ReadKey::ReadMode( 'restore', $stdin );
         $self->disable_mouse_tracking if $mouse_enabled;
+        $self;
     }
 
     method enable_mouse_tracking {

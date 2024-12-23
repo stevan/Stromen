@@ -21,7 +21,6 @@ subtest '.... flatten test' => sub {
     )
 };
 
-
 subtest '.... flat_map test' => sub {
     my @results = Stream
         ->of(map { [0 .. 5] } 0 .. 5)

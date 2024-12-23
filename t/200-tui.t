@@ -9,24 +9,15 @@ use Test::Differences;
 use Stream;
 use Stream::UI;
 
-class Stream::UI::Functional::LineEditor :isa(Stream::Functional) {
-    field $tty    :param :reader;
-    field $prompt :param :reader = '> ';
-
+class Stream::UI::Functional::InputAccumulator :isa(Stream::Functional) {
     field @buffer;
-
-    ADJUST {
-        $tty->print($prompt);
-    }
 
     method apply ($e) {
         if ($e isa Stream::UI::Event::KeyPress) {
             push @buffer => $e->value;
-            $tty->print($e->value);
         }
         elsif ($e isa Stream::UI::Event::Backspace) {
             pop @buffer;
-            $tty->print("\b \b");
         }
     }
 
@@ -35,21 +26,34 @@ class Stream::UI::Functional::LineEditor :isa(Stream::Functional) {
     }
 }
 
+class Stream::UI::Functional::InputEcho :isa(Stream::Functional) {
+    field $tty :param :reader;
+
+    method apply ($e) {
+        $tty->print($e->value) if $e isa Stream::UI::Event::KeyPress;
+        $tty->print("\b \b")   if $e isa Stream::UI::Event::Backspace;
+    }
+}
+
+class Stream::UI::Functional::EOL :isa(Stream::Functional) {
+    method apply ($e) { $e isa Stream::UI::Event::Enter }
+}
 
 my $tty = Stream::UI::TTY->new;
 
 my $s = Stream::UI->new(
     source => Stream::UI::Source::EventsFromTTY->new(
         tty  => $tty,
-        exit => Stream::Functional::Predicate->new( f => sub ($e) {
-            $e isa Stream::UI::Event::Enter
-        })
+        exit => Stream::UI::Functional::EOL->new
     )
 );
 
-$tty->setup;
+$tty->setup->print("> ");
 
-my $result = $s->collect( Stream::UI::Functional::LineEditor->new( tty => $tty ) );
+my $result = $s
+->peek    ( Stream::UI::Functional::InputEcho->new( tty => $tty ) )
+->collect ( Stream::UI::Functional::InputAccumulator->new )
+;
 say "\nGOT: $result";
 
 END { $tty->teardown }
