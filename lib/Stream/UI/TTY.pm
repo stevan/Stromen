@@ -6,6 +6,8 @@ use Term::ReadKey ();
 
 use Stream::UI::Event;
 use Stream::UI::Event::ArrowKey;
+use Stream::UI::Event::Backspace;
+use Stream::UI::Event::Enter;
 use Stream::UI::Event::EscapeKey;
 use Stream::UI::Event::KeyPress;
 use Stream::UI::Event::Mouse;
@@ -13,6 +15,9 @@ use Stream::UI::Event::Mouse;
 use Stream::UI::TTY::MouseTracking;
 
 class Stream::UI::TTY {
+    use constant DEBUG => $ENV{DEBUG_TTY} // 0;
+    sub LOG (@msg) { warn @msg, "\n" }
+
     field $stdin     :param :reader = *STDIN;
     field $stdout    :param :reader = *STDOUT;
     field $use_mouse :param :reader = undef;
@@ -28,6 +33,9 @@ class Stream::UI::TTY {
         }
     }
 
+    method say   (@msg) { say   $stdout @msg }
+    method print (@msg) { print $stdout @msg }
+
     method setup {
         Term::ReadKey::ReadMode( 'cbreak', $stdin );
         $self->enable_mouse_tracking if $use_mouse;
@@ -40,7 +48,7 @@ class Stream::UI::TTY {
 
     method enable_mouse_tracking {
         return if $mouse_enabled;
-        #warn "Enabling Mouse";
+        DEBUG && LOG "Enabling Mouse";
         binmode($stdin, ":encoding(UTF-8)");
         print $stdout "\e[?${use_mouse};1006h";
         $mouse_enabled = true;
@@ -49,7 +57,7 @@ class Stream::UI::TTY {
 
     method disable_mouse_tracking {
         return if !$mouse_enabled;
-        #warn "Disabling Mouse";
+        DEBUG && LOG "Disabling Mouse";
         print $stdout "\e[?${use_mouse};1006l";
         $mouse_enabled = false;
         return
@@ -60,7 +68,7 @@ class Stream::UI::TTY {
         die "WTF $key" unless $key;
 
         if ($key eq "\e") {
-            #warn "Found escape code";
+            DEBUG && LOG "Found escape code";
             my $bracket = Term::ReadKey::ReadKey( -1, $stdin );
             if (!$bracket || $bracket ne '[') {
                 return Stream::UI::Event::EscapeKey->new;
@@ -71,27 +79,27 @@ class Stream::UI::TTY {
                     return Stream::UI::Event::ArrowKey->new( value => "\e[${1}" );
                 }
                 elsif ($next eq '<') {
-                    #warn "Found mouse code";
+                    DEBUG && LOG "Found mouse code";
 
                     my ($event_type, $x, $y, $pressed) = ('', '', '', false);
                     my $temp;
                     while (($temp = Term::ReadKey::ReadKey( 0, $stdin )) =~ m/^[0-9]$/) {
                         $event_type .= $temp;
                     }
-                    #warn "Event type: $event_type";
+                    DEBUG && LOG "Event type: $event_type";
                     die "WTF temp($temp)" unless $temp eq ';';
                     while (($temp = Term::ReadKey::ReadKey( 0, $stdin )) =~ m/^[0-9]$/) {
                         $x .= $temp;
                     }
-                    #warn "x: $x";
+                    DEBUG && LOG "x: $x";
                     die "WTF temp($temp)" unless $temp eq ';';
                     while (($temp = Term::ReadKey::ReadKey( 0, $stdin )) =~ m/^[0-9]$/) {
                         $y .= $temp;
                     }
-                    #warn "y: $y";
+                    DEBUG && LOG "y: $y";
                     die "WTF temp($temp)" unless $temp =~ /^[mM]$/;
                     $pressed = true if $temp eq 'm';
-                    #warn "Pressed: ",$pressed ? 'YES' : 'NO';
+                    DEBUG && LOG "Pressed: ",$pressed ? 'YES' : 'NO';
 
                     my $button = $event_type & 0x03;
                     if ($button == 3) {
@@ -103,7 +111,7 @@ class Stream::UI::TTY {
                             $button += 1;
                         }
                     }
-                    #warn "button: $button";
+                    DEBUG && LOG "button: $button";
 
                     return Stream::UI::Event::Mouse->new(
                         button  => $button,
@@ -119,9 +127,12 @@ class Stream::UI::TTY {
             }
         }
         else {
-            #warn "regular key: $key";
+            DEBUG && LOG "regular key: $key ord(key): ",ord($key);
+            return Stream::UI::Event::Enter->new     if $key eq "\n";
+            return Stream::UI::Event::Backspace->new if ord($key) == 127;
             return Stream::UI::Event::KeyPress->new( value => $key )
         }
     }
+
 }
 
